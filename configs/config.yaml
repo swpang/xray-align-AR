@@ -1,0 +1,111 @@
+#######################
+# Dataset (for train) #
+#######################
+data_dir: /home/ssai1/dhgwag/VITON/VITON-HD/datasets
+data_list: train_pairs.txt
+
+##############
+# Checkpoint #
+##############
+checkpoint_dir: ./checkpoint/
+seg_checkpoint: seg_final.pth
+gmm_checkpoint: gmm_final.pth
+alias_checkpoint: alias_final.pth
+
+####################################################################
+# Train
+####################################################################
+
+##########
+# Common #
+##########
+batch_size: 2
+num_workers: 4
+lr: 0.0002
+beta1: 0.5 # momentum term of adam
+load_height: 512
+load_width: 512
+shuffle: True
+
+semantic_nc: 13 # number of human-parsing map classes
+init_type: xavier # normal, xavier, xavier_uniform, kaiming, orthogonal, none
+init_variance: 0.02 # variance of the initialization distribution
+pool_size: 0 # the size of image buffer that stores previously generated images
+
+niter: 50 # number of iter at starting learning rate
+niter_decay: 150 # number of iter to linearly decay learning rate to zero
+lr_update: TTUR # LR Update Schedule Mode : TTUR (Two-Timestep Update Rule), Linear, Cosine
+save_epoch_freq: 50 # frequency of saving checkpoints at the end of epochs
+save_latest_freq: 2000 # frequency of saving the latest results
+no_html: False # do not save intermediate training results to [opt.checkpoints_dir]/[opt.name]/web/
+
+##########
+# SegGen #
+##########
+lambda_ce: 10
+seg_options: {
+    beta1_G: 0.5,
+    beta2_G: 0.5,
+    beta1_D: 0.999,
+    beta2_D: 0.999,
+    gan_mode: ls # ls, original, w, hinge
+}
+
+##################
+# ALIASGenerator #
+##################
+norm_G: spectralaliasinstance
+ngf: 64 # number of generator filters in the first conv layer
+num_upsampling_layers: most # normal, more, most.
+    # If \'more\', add upsampling layer between the two middle resnet blocks.
+    # If \'most\', also add one more (upsampling + resnet) layer at the end of the generator.
+lambda_feat: 10
+lambda_percept: 10
+norm_feat: 128
+alias_options: {
+    beta1_G: 0,
+    beta2_G: 0.9,
+    beta1_D: 0,
+    beta2_D: 0.9,
+    n_conv: 8,
+    gan_mode: hinge # ls, original, w, hinge
+}
+
+#######
+# GMM #
+#######
+grid_size: 5
+lambda_const: 0.04
+gmm_options: {
+    beta1_G: 0.5,
+    beta2_G: 0.999
+}
+
+#################
+# Discriminator #
+#################
+ndf: 64 # number of discriminator filters in first conv layer
+n_layers_D: 3 # only used if which_model_netD == n_layers
+norm: instance # instance normalization or batch normalization
+num_D: 2 # number of discriminators to use
+lambda_real: 0.5
+discriminator_options: {
+    kw: 4, # PatchGAN kernel width
+    padw: 1 # PatchGAN padding width
+}
+
+#############
+# Visualize #
+#############
+tf_log: True # if specified, use tensorboard logging. Requires tensorflow installed.
+display_winsize: 512 # display window size
+print_freq: 100 # frequency of showing training results on console
+display_freq: 1 # frequency of showing results on console
+
+####################################################################
+# Test
+####################################################################
+save_dir: ./results/
+test_data_list: test_pairs.txt
+label_dir: ./datasets/image-parse/
+save_mid_results: True
