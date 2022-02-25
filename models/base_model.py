@@ -36,6 +36,9 @@ class BaseModel(torch.nn.Module):
         self.pose_down = None
         self.c_masked_down = None
         self.cm_down = None
+        self.img_kp = None
+        self.c_kp = None
+        self.pose_kp = None
         self.seg_input = None
 
         self.FloatTensor = None
@@ -58,6 +61,7 @@ class BaseModel(torch.nn.Module):
         self.criterionFeat = None
         self.criterionL1 = None
         self.criterionConst = None
+        self.criterionKP = None
         self.criterionCE = None
 
         self.optimizer_G = None

@@ -1,12 +1,11 @@
 import numpy as np
-
 import torch
 from torch import nn
 
 
-class TpsGridGen(nn.Module):
+class TPSGridGen(nn.Module):
     def __init__(self, opt, dtype=torch.float):
-        super(TpsGridGen, self).__init__()
+        super(TPSGridGen, self).__init__()
 
         # Create a grid in numpy.
         # TODO: set an appropriate interval ([-1, 1] in CP-VTON, [-0.9, 0.9] in the current version of VITON-HD)
@@ -78,7 +77,7 @@ class TpsGridGen(nn.Module):
         P_X = self.P_X.expand((1,points_h,points_w,1,self.N))
         P_Y = self.P_Y.expand((1,points_h,points_w,1,self.N))
 
-        # compute weigths for non-linear part
+        # compute weights for non-linear part
         W_X = torch.bmm(self.Li[:,:self.N,:self.N].expand((batch_size,self.N,self.N)),Q_X)
         W_Y = torch.bmm(self.Li[:,:self.N,:self.N].expand((batch_size,self.N,self.N)),Q_Y)
         # reshape

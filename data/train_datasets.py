@@ -130,9 +130,9 @@ class VITONDataset(data.Dataset):
         for key in self.c_names:
             c_name[key] = self.c_names[key][index]
             c[key] = Image.open(osp.join(self.data_path, 'cloth', c_name[key])).convert('RGB')
-            c[key] = transforms.Resize(self.load_width, interpolation=2)(c[key])
+            c[key] = transforms.Resize(self.load_width, interpolation=transforms.InterpolationMode.BILINEAR)(c[key])
             cm[key] = Image.open(osp.join(self.data_path, 'cloth-mask', c_name[key]))
-            cm[key] = transforms.Resize(self.load_width, interpolation=0)(cm[key])
+            cm[key] = transforms.Resize(self.load_width, interpolation=transforms.InterpolationMode.NEAREST)(cm[key])
 
             c[key] = self.transform(c[key])  # [-1,1]
             cm_array = np.array(cm[key])
@@ -142,9 +142,9 @@ class VITONDataset(data.Dataset):
 
             if self.is_alias is True:
                 warped_c[key] = Image.open(osp.join(self.data_path, 'warped_cloth', c_name[key])).convert('RGB')
-                warped_c[key] = transforms.Resize(self.load_width, interpolation=2)(warped_c[key])
+                warped_c[key] = transforms.Resize(self.load_width, interpolation=transforms.InterpolationMode.BILINEAR)(warped_c[key])
                 warped_cm[key] = Image.open(osp.join(self.data_path, 'warped_cloth-mask', c_name[key]))
-                warped_cm[key] = transforms.Resize(self.load_width, interpolation=0)(warped_cm[key])
+                warped_cm[key] = transforms.Resize(self.load_width, interpolation=transforms.InterpolationMode.NEAREST)(warped_cm[key])
 
                 warped_c[key] = self.transform(warped_c[key])  # [-1,1]
                 warped_cm_array = np.array(warped_cm[key])
@@ -155,7 +155,7 @@ class VITONDataset(data.Dataset):
         # load pose image
         pose_name = img_name.replace('.jpg', '_rendered.png')
         pose_rgb = Image.open(osp.join(self.data_path, 'openpose-img', pose_name))
-        pose_rgb = transforms.Resize(self.load_width, interpolation=2)(pose_rgb)
+        pose_rgb = transforms.Resize(self.load_width, interpolation=transforms.InterpolationMode.BILINEAR)(pose_rgb)
         pose_rgb = self.transform(pose_rgb)  # [-1,1]
 
         pose_name = img_name.replace('.jpg', '_keypoints.json')
@@ -165,12 +165,32 @@ class VITONDataset(data.Dataset):
             pose_data = np.array(pose_data)
             pose_data = pose_data.reshape((-1, 3))[:, :2]
 
+        pose_keypoints = {
+            'mid_shoulder': pose_data[1,:],
+            'right_shoulder': pose_data[2,:],
+            'right_elbow': pose_data[3,:],
+            'right_hand': pose_data[4,:],
+            'left_shoulder': pose_data[5,:],
+            'left_elbow': pose_data[6,:],
+            'left_hand': pose_data[7,:],
+            'mid_hip': pose_data[8,:]
+        }
+
+        xy = [tuple(pose_keypoints['right_shoulder']),
+            tuple(pose_keypoints['mid_shoulder']),
+            tuple(pose_keypoints['left_shoulder']),
+            tuple(pose_keypoints['mid_hip'])]
+
+        pose_keypoints_map = Image.new('RGB', (self.load_width, self.load_height), 'white')
+        pose_keypoints_map_draw = ImageDraw.Draw(pose_keypoints_map)
+        pose_keypoints_map_draw.polygon(xy, fill='black', outline='black')
+
         # load parsing image
         parse_name = img_name.replace('.jpg', '.png')
         parse = Image.open(osp.join(self.data_path, 'image-parse', parse_name))
         parse_tensor = parse.resize((256, 256), Image.BICUBIC)
-        parse = transforms.Resize(self.load_width, interpolation=0)(parse)
-        parse_tensor = np.array(parse_tensor)
+        parse = transforms.Resize(self.load_width, interpolation=transforms.InterpolationMode.NEAREST)(parse)
+        parse_tensor = np.asarray(parse_tensor)
         parse_tensor = torch.from_numpy(parse_tensor).long()
         parse_agnostic = self.get_parse_agnostic(parse, pose_data)
         # parse_agnostic.save('parse_'+parse_name)
@@ -211,11 +231,56 @@ class VITONDataset(data.Dataset):
 
         # load person image
         img = Image.open(osp.join(self.data_path, 'image', img_name))
-        img = transforms.Resize(self.load_width, interpolation=2)(img)
+        img = transforms.Resize(self.load_width, interpolation=transforms.InterpolationMode.BILINEAR)(img)
         img_agnostic = self.get_img_agnostic(img, parse, pose_data)
         img = self.transform(img)
         #img_agnostic.save('img_'+parse_name)
         img_agnostic = self.transform(img_agnostic)  # [-1,1]
+
+        # load person keypoints
+        img_kp_name = img_name.replace('.jpg', '.json')
+        with open(osp.join(self.data_path, 'img-keypoints', img_kp_name), 'r') as f:
+            img_kp = json.load(f)
+            img_kp = img_kp['keypoints']
+
+        img_keypoints = {
+            'right_shoulder': img_kp['Rshoulder'],
+            'left_shoulder': img_kp['Lshoulder']
+        }
+
+        # load cloth keypoints
+        cloth_kp_name = img_name.replace('.jpg', '.json')
+        with open(osp.join(self.data_path, 'cloth-keypoints', cloth_kp_name), 'r') as f:
+            cloth_kp = json.load(f)
+            cloth_kp = cloth_kp['keypoints']
+
+        cloth_keypoints = {
+            'right_shoulder': cloth_kp['Rshoulder'],
+            'left_shoulder': cloth_kp['Lshoulder'],
+            'thoracic_vertebrae': {
+                1: cloth_kp['1Thoracic'],
+                # 2: cloth_kp['2Thoracic'],
+                # 3: cloth_kp['3Thoracic'],
+                # 4: cloth_kp['4Thoracic'],
+                # 5: cloth_kp['5Thoracic'],
+                # 6: cloth_kp['6Thoracic'],
+                # 7: cloth_kp['7Thoracic'],
+                # 8: cloth_kp['8Thoracic'],
+                # 9: cloth_kp['9Thoracic'],
+                # 10: cloth_kp['10Thoracic'],
+                # 11: cloth_kp['11Thoracic'],
+                12: cloth_kp['12Thoracic'],
+            }
+        }
+
+        xy = [tuple(cloth_keypoints['right_shoulder']),
+              tuple(cloth_keypoints['thoracic_vertebrae'][1]),
+              tuple(cloth_keypoints['left_shoulder']),
+              tuple(cloth_keypoints['thoracic_vertebrae'][12])]
+
+        cloth_keypoints_map = Image.new('RGB', (self.load_width, self.load_height), 'white')
+        cloth_keypoints_map_draw = ImageDraw.Draw(cloth_keypoints_map)
+        cloth_keypoints_map_draw.polygon(xy, fill='black', outline='black')
 
         result = {
             'img_name': img_name,
@@ -230,6 +295,10 @@ class VITONDataset(data.Dataset):
             'cloth_mask': cm,
             'warped_cloth': warped_c,
             'warped_cloth_mask': warped_cm,
+            # img_keypoints, cloth_keypoints, pose_keypoints
+            'img_keypoints': img_keypoints,
+            'cloth_keypoints': cloth_keypoints_map,
+            'pose_keypoints': pose_keypoints_map
         }
         return result
 

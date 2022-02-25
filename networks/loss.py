@@ -3,6 +3,7 @@ from torch import nn
 from torch.nn import functional as F
 
 from networks.cnn_networks import VGG19
+from util.tps_grid_gen import TPSGridGen
 
 
 class GANLoss(nn.Module):
@@ -185,3 +186,13 @@ class ConstraintLoss(nn.Module):
         cy_loss = torch.max(cy, col_y).mean()
 
         return rx_loss + ry_loss + cx_loss + cy_loss + rg_loss + cg_loss
+
+class AlignmentLoss(nn.Module):
+    def __init__(self, opt):
+        super(AlignmentLoss, self).__init__()
+        self.opt = opt
+        self.tps = TPSGridGen(self.opt)
+
+    def forward(self, theta, pose_kp, img_kp, c_kp):
+        self.tps.apply_transformation(theta, c_kp)
+        return loss
