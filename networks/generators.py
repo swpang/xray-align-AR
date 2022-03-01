@@ -6,7 +6,7 @@ from torch.nn.utils.spectral_norm import spectral_norm
 from networks.base_network import BaseNetwork
 from networks.normalization import ALIASNorm
 from networks.cnn_networks import FeatureRegression, FeatureCorrelation, FeatureExtraction
-from util.tps_grid_gen import TpsGridGen
+from util.tps_grid_gen import TPSGridGen
 
 
 class SegGenerator(BaseNetwork):
@@ -78,7 +78,7 @@ class GMM(nn.Module):
         self.correlation = FeatureCorrelation()
         self.regression = FeatureRegression(input_nc=(opt['load_width'] // 32) * (opt['load_height'] // 32) ,
                                             output_size=2 * opt['grid_size']**2)
-        self.gridGen = TpsGridGen(opt)
+        self.gridGen = TPSGridGen(opt)
 
     def forward(self, inputA, inputB):
         featureA = F.normalize(self.extractionA(inputA), dim=1)

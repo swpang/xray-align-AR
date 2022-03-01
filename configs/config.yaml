@@ -76,6 +76,7 @@ alias_options: {
 #######
 grid_size: 5
 lambda_const: 0.04
+lambda_kp: 0.5
 gmm_options: {
     beta1_G: 0.5,
     beta2_G: 0.999

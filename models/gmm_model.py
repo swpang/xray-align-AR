@@ -5,7 +5,7 @@ import torchgeometry as tgm
 
 from models.base_model import BaseModel
 from networks.generators import GMM
-from networks.loss import ConstraintLoss
+from networks.loss import ConstraintLoss, AlignmentLoss
 from util.utils import ImagePool
 
 
@@ -46,16 +46,18 @@ class GmmModel(BaseModel):
             # Define loss functions
             self.criterionL1 = torch.nn.L1Loss()
             self.criterionConst = ConstraintLoss(opt)
+            # self.criterionKP = AlignmentLoss(opt)
         return self.netG
 
     def calculate_loss(self, inputs):
-        Losses = {}
-        Generated = {} # warped_c, warped_cm, theta, warped_grid
+        Losses = {} # L1, L2_const (TPS_Grid_constraints), KP
+        Generated = {} # warped_c, warped_cm, theta, warped_grid, warped_kp
 
         theta, warped_grid = self.netG.forward(inputs, self.c_gmm)
 
         warped_c = F.grid_sample(self.c * self.cm, warped_grid, padding_mode='border')
         warped_cm = F.grid_sample(self.cm, warped_grid, padding_mode='border')
+        warped_kp = F.grid_sample(self.c_kp, warped_grid, padding_mode='border')
 
         theta_x = theta[:, :self.opt['grid_size'] * self.opt['grid_size']].unsqueeze(2)
         theta_y = theta[:, self.opt['grid_size'] * self.opt['grid_size']:].unsqueeze(2)
@@ -65,11 +67,13 @@ class GmmModel(BaseModel):
         # FIXME: No mention of L1 Mask Loss in VITON-HD paper! Is this necessary?
         # Losses['L1_mask'] = self.criterionL1(self.warped_cm, self.parse_map[:,3:4])
         Losses['L2_const'] = self.criterionConst(theta) * self.opt['lambda_const']
+        Losses['KP'] = self.criterionL1(warped_kp, self.img_kp) * self.opt['lambda_kp']
 
         Generated['warped_c'] = warped_c
         Generated['warped_cm'] = warped_cm
         Generated['theta'] = theta
         Generated['warped_grid'] = warped_grid
+        Generated['warped_kp'] = warped_kp
 
         return Losses, Generated
 
@@ -88,6 +92,9 @@ class GmmModel(BaseModel):
         self.pose = inputs['pose'].cuda()
         self.c = inputs['cloth']['unpaired'].cuda()
         self.cm = inputs['cloth_mask']['unpaired'].cuda()
+        self.pose_kp = inputs['pose_keypoints'].cuda()
+        self.img_kp = inputs['img_keypoints'].cuda()
+        self.c_kp = inputs['cloth_keypoints'].cuda()
         self.im_c = self.img * self.parse_map[:, 3:4]
 
         # Interpolate method default = nearest
