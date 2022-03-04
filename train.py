@@ -13,8 +13,6 @@ from trainers.alias_trainer import ALIASTrainer
 from trainers.gmm_trainer import GMMTrainer
 from trainers.seg_trainer import SegTrainer
 
-from util.cosine_scheduler import CosineScheduler
-
 
 def get_opt():
     parser = argparse.ArgumentParser()

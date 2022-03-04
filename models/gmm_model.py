@@ -53,7 +53,7 @@ class GmmModel(BaseModel):
         Losses = {} # L1, L2_const (TPS_Grid_constraints), KP
         Generated = {} # warped_c, warped_cm, theta, warped_grid, warped_kp
 
-        theta, warped_grid = self.netG.forward(self.gmm_input, self.c_gmm)
+        theta, warped_grid = self.netG.forward(self.gmm_input, torch.cat(self.c_gmm, self.cloth_gmm))
 
         warped_c = F.grid_sample(self.c * self.cm, warped_grid, padding_mode='border')
         warped_cm = F.grid_sample(self.cm, warped_grid, padding_mode='border')
@@ -93,7 +93,7 @@ class GmmModel(BaseModel):
         self.c = inputs['cloth']['unpaired'].cuda()
         self.cm = inputs['cloth_mask']['unpaired'].cuda()
         self.pose_kp = inputs['pose_keypoints'].cuda()
-        self.c_kp = inputs['cloth_keypoints'].cuda()
+        self.c_kp = inputs['cloth_keypoints']['unpaired'].cuda()
         self.im_c = self.img * self.parse_map[:, 3:4]
 
         # Interpolate method default = nearest
@@ -101,13 +101,13 @@ class GmmModel(BaseModel):
         self.parse_cloth_gmm = F.interpolate(self.parse_map[:, 3:4], size=(256, 256))
         self.c_gmm = F.interpolate(self.c * self.cm, size=(256, 256))
         self.pose_gmm = F.interpolate(self.pose, size=(256, 256))
+        self.cloth_gmm = F.interpolate(self.c_kp, size=(256, 256))
 
         self.gmm_input = torch.cat((self.parse_cloth_gmm, self.pose_gmm, self.agnostic_gmm), dim=1)
 
     # Forward function for the entire network
     def forward(self, inputs, mode):
         self.preprocess_input(inputs)
-
         if mode == 'train':
             loss, generated = self.calculate_loss(self.gmm_input)
             return loss, generated
