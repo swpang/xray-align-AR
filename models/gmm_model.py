@@ -119,4 +119,7 @@ class GmmModel(BaseModel):
             return warped_c, warped_cm
         else:
             raise ValueError('|mode| is invalid')
-
+    
+    # Save model function
+    def save(self, which_epoch):
+        self.save_network(self.netG, 'G', which_epoch, self.gpu_ids)
