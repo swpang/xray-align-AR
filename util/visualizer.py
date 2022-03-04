@@ -37,24 +37,6 @@ class Visualizer():
 
     # |visuals|: dictionary of images to display or save
     def display_current_results(self, visuals, epoch, step):
-        # if self.tf_log: # show images in tensorboard output
-        #     img_summaries = []
-        #     for label, image_numpy in visuals.items():
-        #         # Write the image to a string
-        #         try:
-        #             s = StringIO()
-        #         except:
-        #             s = BytesIO()
-        #         Image.fromarray(image_numpy).save(s, format="jpeg")
-        #         # Create an Image object
-        #         img_sum = self.tf.summary.image(encoded_image_string=s.getvalue(), height=image_numpy.shape[0], width=image_numpy.shape[1])
-        #         # Create a Summary value
-        #         img_summaries.append(self.tf.summary.scaler(tag=label, image=img_sum))
-
-        #     # Create and write Summary
-        #     summary = self.tf.summary(value=img_summaries)
-        #     self.writer.add_summary(summary, step)
-
         if self.use_html: # save images to a html file
             for label, image_numpy in visuals.items():
                 if isinstance(image_numpy, list):

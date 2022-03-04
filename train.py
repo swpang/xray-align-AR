@@ -196,7 +196,8 @@ def train_gmm(opt):
                 visuals = OrderedDict([('fake_cloth', tensor2im(trainer.get_latest_generated()['warped_c'].data[0])),
                                        ('real_cloth', tensor2im(inputs['cloth']['unpaired'].data[0])),
                                        ('fake_cloth_mask', tensor2im(trainer.get_latest_generated()['warped_cm'].data[0])),
-                                       ('real_cloth_mask', tensor2im(inputs['cloth_mask']['unpaired'].data[0]))])
+                                       ('real_cloth_mask', tensor2im(inputs['cloth_mask']['unpaired'].data[0])),
+                                       ('overlayed_cloth', tensor2im(trainer.get_latest_generated()['warped_c'].data[0] + inputs['img_agnostic']))])
                 visualizer.display_current_results(visuals, epoch, total_steps)
 
             # save latest model
@@ -224,7 +225,7 @@ def train_gmm(opt):
 
         # linearly decay learning rate after certain iterations
         if epoch > opt['niter']:
-            trainer.update_learning_rate()
+            trainer.update_learning_rate(epoch)
 
 def train_alias(opt):
     iter_path = os.path.join(opt['checkpoint_dir'], opt['name'], 'iter.txt')

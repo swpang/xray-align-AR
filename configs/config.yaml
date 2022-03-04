@@ -32,11 +32,11 @@ init_type: xavier # normal, xavier, xavier_uniform, kaiming, orthogonal, none
 init_variance: 0.02 # variance of the initialization distribution
 pool_size: 0 # the size of image buffer that stores previously generated images
 
-niter: 50 # number of iter at starting learning rate
-niter_decay: 150 # number of iter to linearly decay learning rate to zero
+niter: 100 # number of iter at starting learning rate
+niter_decay: 100 # number of iter to linearly decay learning rate to zero
 lr_update: TTUR # LR Update Schedule Mode : TTUR (Two-Timestep Update Rule), Linear, Cosine
 save_epoch_freq: 50 # frequency of saving checkpoints at the end of epochs
-save_latest_freq: 2000 # frequency of saving the latest results
+save_latest_freq: 1000 # frequency (in terms of iterations) of saving the latest checkpoints
 no_html: False # do not save intermediate training results to [opt.checkpoints_dir]/[opt.name]/web/
 
 ##########
@@ -100,8 +100,8 @@ discriminator_options: {
 #############
 tf_log: True # if specified, use tensorboard logging. Requires tensorflow installed.
 display_winsize: 512 # display window size
-print_freq: 100 # frequency of showing training results on console
-display_freq: 1 # frequency of showing results on console
+print_freq: 1 # frequency of showing training results on console
+display_freq: 50 # frequency of showing results on console
 
 ####################################################################
 # Test

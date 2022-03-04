@@ -53,7 +53,7 @@ class GmmModel(BaseModel):
         Losses = {} # L1, L2_const (TPS_Grid_constraints), KP
         Generated = {} # warped_c, warped_cm, theta, warped_grid, warped_kp
 
-        theta, warped_grid = self.netG.forward(inputs, self.c_gmm)
+        theta, warped_grid = self.netG.forward(self.gmm_input, self.c_gmm)
 
         warped_c = F.grid_sample(self.c * self.cm, warped_grid, padding_mode='border')
         warped_cm = F.grid_sample(self.cm, warped_grid, padding_mode='border')
@@ -67,7 +67,7 @@ class GmmModel(BaseModel):
         # FIXME: No mention of L1 Mask Loss in VITON-HD paper! Is this necessary?
         # Losses['L1_mask'] = self.criterionL1(self.warped_cm, self.parse_map[:,3:4])
         Losses['L2_const'] = self.criterionConst(theta) * self.opt['lambda_const']
-        Losses['KP'] = self.criterionL1(warped_kp, self.img_kp) * self.opt['lambda_kp']
+        Losses['KP'] = self.criterionL1(warped_kp, self.pose_kp) * self.opt['lambda_kp']
 
         Generated['warped_c'] = warped_c
         Generated['warped_cm'] = warped_cm
@@ -93,7 +93,6 @@ class GmmModel(BaseModel):
         self.c = inputs['cloth']['unpaired'].cuda()
         self.cm = inputs['cloth_mask']['unpaired'].cuda()
         self.pose_kp = inputs['pose_keypoints'].cuda()
-        self.img_kp = inputs['img_keypoints'].cuda()
         self.c_kp = inputs['cloth_keypoints'].cuda()
         self.im_c = self.img * self.parse_map[:, 3:4]
 
