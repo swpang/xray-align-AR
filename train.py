@@ -195,7 +195,7 @@ def train_gmm(opt):
                                        ('real_cloth', tensor2im(inputs['cloth']['unpaired'].data[0])),
                                        ('fake_cloth_mask', tensor2im(trainer.get_latest_generated()['warped_cm'].data[0])),
                                        ('real_cloth_mask', tensor2im(inputs['cloth_mask']['unpaired'].data[0])),
-                                       ('overlayed_cloth', tensor2im(trainer.get_latest_generated()['warped_c'].data[0] + inputs['img_agnostic']))])
+                                       ('overlayed_cloth', tensor2im((trainer.get_latest_generated()['warped_c'].data[0] + inputs['img_agnostic']) * 0.5))])
                 visualizer.display_current_results(visuals, epoch, total_steps)
 
             # save latest model
