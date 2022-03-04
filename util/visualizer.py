@@ -41,10 +41,10 @@ class Visualizer():
             for label, image_numpy in visuals.items():
                 if isinstance(image_numpy, list):
                     for i in range(len(image_numpy)):
-                        img_path = os.path.join(self.img_dir, 'epoch%.3d_%s_%d.jpg' % (epoch, label, i))
+                        img_path = os.path.join(self.img_dir, 'epoch%.3d_%d_%s_%d.jpg' % (epoch, step, label, i))
                         utils.save_image(image_numpy[i], img_path)
                 else:
-                    img_path = os.path.join(self.img_dir, 'epoch%.3d_%s.jpg' % (epoch, label))
+                    img_path = os.path.join(self.img_dir, 'epoch%.3d_%d_%s.jpg' % (epoch, step, label))
                     utils.save_image(image_numpy, img_path)
 
             # update website
