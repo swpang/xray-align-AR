@@ -211,7 +211,7 @@ def train_gmm(opt):
         # end of epoch
         iter_end_time = time.time()
         print('End of epoch %d / %d \t Time Taken: %d sec' %
-              (epoch, opt['iter'] + opt['iter_decay'], iter_end_time - epoch_start_time))
+              (epoch, opt['niter'] + opt['niter_decay'], iter_end_time - epoch_start_time))
 
         # save model for this epoch
         if epoch % opt['save_epoch_freq'] == 0:

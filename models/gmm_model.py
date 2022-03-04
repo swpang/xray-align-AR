@@ -24,7 +24,7 @@ class GmmModel(BaseModel):
 
         # Define Networks
         # Generator network
-        self.netG = GMM(opt, inputA_nc=7, inputB_nc=3)
+        self.netG = GMM(opt, inputA_nc=7, inputB_nc=6)
 
         print('---------- Networks initialized -------------')
 
