@@ -53,7 +53,7 @@ class GmmModel(BaseModel):
         Losses = {} # L1, L2_const (TPS_Grid_constraints), KP
         Generated = {} # warped_c, warped_cm, theta, warped_grid, warped_kp
 
-        theta, warped_grid = self.netG.forward(self.gmm_input, torch.cat(self.c_gmm, self.cloth_gmm))
+        theta, warped_grid = self.netG.forward(self.gmm_input, torch.cat((self.c_gmm, self.cloth_gmm), dim=1))
 
         warped_c = F.grid_sample(self.c * self.cm, warped_grid, padding_mode='border')
         warped_cm = F.grid_sample(self.cm, warped_grid, padding_mode='border')
