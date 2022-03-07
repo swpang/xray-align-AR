@@ -12,11 +12,12 @@ from data.test_datasets import VITONDataset, VITONDataLoader
 from networks.generators import SegGenerator, GMM, ALIASGenerator
 from util.utils import gen_noise, load_checkpoint, save_images, tensor2label, tensor2im
 
+#TODO: incorporate trainers into inference code
 
 def get_opt():
     parser = argparse.ArgumentParser()
     parser.add_argument('--name', type=str, required=True)
-    parser.add_argument('--mode', type=str, default='test')
+    parser.add_argument('--test_model', type=str, required=True, help='seg, gmm, alias, all')
     parser.add_argument('--config', '--c', type=str, default='./configs/config_test.yaml')
     parser.add_argument('--gpu_ids', type=str, default='0', help='gpu ids: e. g. 0  0,1,2,  0,2. use -1 for CPU')
     parser.add_argument('--which_epoch', type=str, default='latest', help='latest or multiples of 50')
@@ -49,6 +50,7 @@ def test(opt, seg, gmm, alias):
             pose = inputs['pose'].cuda()
             c = inputs['cloth']['unpaired'].cuda()
             cm = inputs['cloth_mask']['unpaired'].cuda()
+            c_kp = inputs['cloth_keypoints']['unpaired'].cuda()
 
             if seg_gen is True:
                 # Part 1. Segmentation generation
@@ -56,7 +58,7 @@ def test(opt, seg, gmm, alias):
                 pose_down = F.interpolate(pose, size=(256, 256), mode='bilinear')
                 c_masked_down = F.interpolate(c * cm, size=(256, 256), mode='bilinear')
                 cm_down = F.interpolate(cm, size=(256, 256), mode='bilinear')
-                seg_input = torch.cat((cm_down, c_masked_down, parse_agnostic_down, pose_down, gen_noise(cm_down.size()).cuda()), dim=1)
+                seg_input = torch.cat((parse_agnostic_down, pose_down, gen_noise(c_masked_down.size()).cuda()), dim=1)
 
                 parse_pred_down = seg(seg_input)
                 parse_pred = gauss(up(parse_pred_down))
@@ -64,7 +66,9 @@ def test(opt, seg, gmm, alias):
 
                 if save_mid_imgs:
                     pil_image = Image.fromarray(tensor2label(parse_pred[0], 13))
-                    pil_image.save(os.path.join(opt['save_dir'], 'seggen')+'/seg_' + img_names[0].replace('_cnt_0_background_removed.jpg', '') + '_' + c_names[0])
+                    if not os.path.exists(os.path.join(opt['save_dir'], 'seggen')):
+                        os.mkdir(os.path.join(opt['save_dir'], 'seggen'))
+                    pil_image.save(os.path.join(opt['save_dir'], 'seggen')+'/seg_' + img_names[0].replace('.jpg', '') + '_' + c_names[0])
 
                 parse_old = torch.zeros(parse_pred.size(0), 13, opt['load_height'], opt['load_width'], dtype=torch.float).cuda()
                 parse_old.scatter_(1, parse_pred, 1.0)
@@ -86,15 +90,17 @@ def test(opt, seg, gmm, alias):
             if gmm_gen is True:
                 # Part 2. Clothes Deformation
                 agnostic_gmm = F.interpolate(img_agnostic, size=(256, 256), mode='bicubic')
+                cloth_gmm = F.interpolate(c_kp, size=(256, 256), mode='bicubic')
                 if seg_gen is True:
                     parse_cloth_gmm = F.interpolate(parse[:, 2:3], size=(256, 256),mode='bicubic')
                 else:
                     parse_cloth_gmm = F.interpolate(parse_map[:, 3:4], size=(256, 256), mode='bicubic')
                 pose_gmm = F.interpolate(pose, size=(256, 256), mode='bicubic')
                 c_gmm = F.interpolate(c * cm, size=(256, 256), mode='bicubic')
-                gmm_input = torch.cat((parse_cloth_gmm, pose_gmm, agnostic_gmm), dim=1)
+                gmm_input_A = torch.cat((parse_cloth_gmm, pose_gmm, agnostic_gmm), dim=1)
+                gmm_input_B = torch.cat((c_gmm, cloth_gmm), dim=1)
 
-                _, warped_grid = gmm(gmm_input, c_gmm)
+                _, warped_grid = gmm(gmm_input_A, gmm_input_B)
                 warped_c = F.grid_sample(c*cm, warped_grid, padding_mode='border')
                 warped_cm = F.grid_sample(cm, warped_grid, padding_mode='border')
 
@@ -118,7 +124,7 @@ def test(opt, seg, gmm, alias):
                 for img_name, c_name in zip(img_names, c_names):
                     unpaired_names.append('{}_{}'.format(img_name.replace('_cnt_0_background_removed.jpg', ''), c_name))
 
-            save_images(output, unpaired_names, opt['save_dir'])
+                save_images(output, unpaired_names, opt['save_dir'])
 
             if (i + 1) % opt['display_freq'] == 0:
                 print("step: {}".format(i + 1))
@@ -130,7 +136,7 @@ def main():
     # Add command line arguments to config file options
     opt['name'] = config.name
     opt['gpu_ids'] = config.gpu_ids
-    opt['mode'] = config.mode
+    opt['test_model'] = config.test_model
     opt['which_epoch'] = config.which_epoch
 
     str_ids = opt['gpu_ids'].split(',')
@@ -147,22 +153,26 @@ def main():
     if not os.path.exists(opt['save_dir']):
         os.makedirs(opt['save_dir'])
 
-    seg = SegGenerator(opt, input_nc=opt['semantic_nc'] + 8, output_nc=opt['semantic_nc'])
-    print(seg)
-    gmm = GMM(opt, inputA_nc=7, inputB_nc=6)
-    print(gmm)
-    opt['semantic_nc'] = 7
-    alias = ALIASGenerator(opt, input_nc=9)
-    opt['semantic_nc'] = 13
-    print(alias)
+    seg, gmm, alias = None, None, None
 
-    load_checkpoint(seg, os.path.join(opt['checkpoint_dir'], opt['seg_checkpoint']))
-    load_checkpoint(gmm, os.path.join(opt['checkpoint_dir'], opt['gmm_checkpoint']))
-    load_checkpoint(alias, os.path.join(opt['checkpoint_dir'], opt['alias_checkpoint']))
+    if opt['test_model'] == 'seg' or opt['test_model'] == 'all':
+        seg = SegGenerator(opt, input_nc=opt['semantic_nc'] + 6, output_nc=opt['semantic_nc'])
+        print(seg)
+        load_checkpoint(seg, os.path.join(opt['checkpoint_dir'], opt['seg_checkpoint']))
+        seg.cuda().eval()
+    if opt['test_model'] == 'gmm' or opt['test_model'] == 'all':
+        gmm = GMM(opt, inputA_nc=7, inputB_nc=6)
+        print(gmm)
+        load_checkpoint(gmm, os.path.join(opt['checkpoint_dir'], opt['gmm_checkpoint']))
+        gmm.cuda().eval()
+    if opt['test_model'] == 'alias' or opt['test_model'] == 'all':
+        opt['semantic_nc'] = 7
+        alias = ALIASGenerator(opt, input_nc=9)
+        opt['semantic_nc'] = 13
+        print(alias)
+        load_checkpoint(alias, os.path.join(opt['checkpoint_dir'], opt['alias_checkpoint']))
+        alias.cuda().eval()
 
-    seg.cuda().eval()
-    gmm.cuda().eval()
-    alias.cuda().eval()
     test(opt, seg, gmm, alias)
 
 

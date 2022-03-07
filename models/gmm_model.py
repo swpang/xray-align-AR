@@ -113,7 +113,7 @@ class GmmModel(BaseModel):
             return loss, generated
         elif mode == 'inference':
             with torch.no_grad():
-                _, warped_grid =  self.netG.forward(inputs, self.c_gmm)
+                _, warped_grid = self.netG.forward(self.gmm_input, torch.cat((self.c_gmm, self.cloth_gmm), dim=1))
                 warped_c = F.grid_sample(self.c * self.cm, warped_grid, padding_mode='border')
                 warped_cm = F.grid_sample(self.cm, warped_grid, padding_mode='border')
             return warped_c, warped_cm
