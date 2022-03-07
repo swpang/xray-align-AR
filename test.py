@@ -10,6 +10,9 @@ from PIL import Image
 
 from data.test_datasets import VITONDataset, VITONDataLoader
 from networks.generators import SegGenerator, GMM, ALIASGenerator
+from models.seg_model import SegModel
+from models.gmm_model import GmmModel
+from models.alias_model import AliasModel
 from util.utils import gen_noise, load_checkpoint, save_images, tensor2label, tensor2im
 
 #TODO: incorporate trainers into inference code
@@ -106,9 +109,9 @@ def test(opt, seg, gmm, alias):
 
                 if save_mid_imgs:
                     warped_c_image = Image.fromarray(tensor2im(warped_c[0]))
-                    warped_c_image.save(os.path.join(opt['save_dir'], 'warped_c')+'/warped_c_' + img_names[0].replace('_cnt_0_background_removed.jpg', '') + '_' + c_names[0])
+                    warped_c_image.save(os.path.join(opt['save_dir'], 'warped_c')+'/warped_c_' + img_names[0].replace('.jpg', '') + '_' + c_names[0])
                     warped_cm_image = Image.fromarray(tensor2im(warped_cm[0], normalize=False))
-                    warped_cm_image.save(os.path.join(opt['save_dir'], 'warped_c')+'/warped_cm_' + img_names[0].replace('_cnt_0_background_removed.jpg', '') + '_' + c_names[0])
+                    warped_cm_image.save(os.path.join(opt['save_dir'], 'warped_c')+'/warped_cm_' + img_names[0].replace('.jpg', '') + '_' + c_names[0])
 
             if alias_gen:
                 # Part 3. Try-on synthesis
@@ -122,7 +125,7 @@ def test(opt, seg, gmm, alias):
                 unpaired_names = []
                 print(img_names, c_names)
                 for img_name, c_name in zip(img_names, c_names):
-                    unpaired_names.append('{}_{}'.format(img_name.replace('_cnt_0_background_removed.jpg', ''), c_name))
+                    unpaired_names.append('{}_{}'.format(img_name.replace('.jpg', ''), c_name))
 
                 save_images(output, unpaired_names, opt['save_dir'])
 
@@ -160,6 +163,10 @@ def main():
         print(seg)
         load_checkpoint(seg, os.path.join(opt['checkpoint_dir'], opt['seg_checkpoint']))
         seg.cuda().eval()
+
+        seg = SegModel()
+
+
     if opt['test_model'] == 'gmm' or opt['test_model'] == 'all':
         gmm = GMM(opt, inputA_nc=7, inputB_nc=6)
         print(gmm)
