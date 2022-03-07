@@ -17,17 +17,9 @@ def get_opt():
     parser = argparse.ArgumentParser()
     parser.add_argument('--name', type=str, required=True)
     parser.add_argument('--mode', type=str, default='test')
-    parser.add_argument('--config', '--c', type=str, default='./configs/config.yaml')
+    parser.add_argument('--config', '--c', type=str, default='./configs/config_test.yaml')
     parser.add_argument('--gpu_ids', type=str, default='0', help='gpu ids: e. g. 0  0,1,2,  0,2. use -1 for CPU')
     parser.add_argument('--which_epoch', type=str, default='latest', help='latest or multiples of 50')
-
-    parser.add_argument('--dataset_dir', type=str)
-    parser.add_argument('--dataset_list', type=str)
-    parser.add_argument('--label_dir', type=str)
-    parser.add_argument('--checkpoint_dir', type=str)
-    parser.add_argument('--save_dir', type=str)
-    parser.add_argument('--alias_g_checkpoint', type=str)
-    parser.add_argument('--alias_d_checkpoint', type=str)
 
     opt = parser.parse_args()
     return opt
@@ -139,13 +131,7 @@ def main():
     opt['name'] = config.name
     opt['gpu_ids'] = config.gpu_ids
     opt['mode'] = config.mode
-    opt['data_dir'] = config.dataset_dir
-    opt['data_list'] = config.dataset_list
-    opt['label_dir'] = config.label_dir
-    opt['checkpoint_dir'] = config.checkpoint_dir
-    opt['save_dir'] = config.save_dir
-    opt['alias_g_checkpoint'] = config.alias_g_checkpoint
-    opt['alias_d_checkpoint'] = config.alias_d_checkpoint
+    opt['which_epoch'] = config.which_epoch
 
     str_ids = opt['gpu_ids'].split(',')
     opt['gpu_ids'] = []
@@ -163,7 +149,7 @@ def main():
 
     seg = SegGenerator(opt, input_nc=opt['semantic_nc'] + 8, output_nc=opt['semantic_nc'])
     print(seg)
-    gmm = GMM(opt, inputA_nc=7, inputB_nc=3)
+    gmm = GMM(opt, inputA_nc=7, inputB_nc=6)
     print(gmm)
     opt['semantic_nc'] = 7
     alias = ALIASGenerator(opt, input_nc=9)

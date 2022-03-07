@@ -1,7 +1,7 @@
 #######################
 # Dataset (for train) #
 #######################
-data_dir: /home/ssai1/dhgwag/VITON/VITON-HD/datasets
+data_dir: ./datasets/
 data_list: train_pairs.txt
 
 ##############
@@ -36,7 +36,7 @@ niter: 100 # number of iter at starting learning rate
 niter_decay: 100 # number of iter to linearly decay learning rate to zero
 lr_update: TTUR # LR Update Schedule Mode : TTUR (Two-Timestep Update Rule), Linear, Cosine
 save_epoch_freq: 50 # frequency of saving checkpoints at the end of epochs
-save_latest_freq: 1000 # frequency (in terms of iterations) of saving the latest checkpoints
+save_latest_freq: 100 # frequency (in terms of iterations) of saving the latest checkpoints
 no_html: False # do not save intermediate training results to [opt.checkpoints_dir]/[opt.name]/web/
 
 ##########
@@ -106,7 +106,7 @@ display_freq: 50 # frequency of showing results on console
 ####################################################################
 # Test
 ####################################################################
-save_dir: ./results/
+save_dir: ./results/ # what's wrong?
 test_data_list: test_pairs.txt
 label_dir: ./datasets/image-parse/
 save_mid_results: True
